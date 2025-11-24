@@ -1,6 +1,5 @@
 from django.db import models
-
-# Create your models here.
+from django.utils import timezone
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
@@ -18,3 +17,21 @@ class Producto(models.Model):
 
     def __str__(self):
         return self.nombre
+    
+class CartItem(models.Model):
+    session_key = models.CharField(max_length=100, db_index=True, null=True, blank=True)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('session_key', 'producto')
+        ordering = ['-updated_at']
+
+    def subtotal(self):
+        precio = getattr(self.producto, 'precio', None) or getattr(self.producto, 'price', 0)
+        return precio * self.cantidad
+
+    def __str__(self):
+        return f'{self.session_key} - {self.producto} x{self.cantidad}'
